@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 from redbot.core.bot import Red
-from cogs.announcements.announcements import Announcements
+from announcements import Announcements
 
 app = Flask(__name__)
 bot: Red = None

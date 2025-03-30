@@ -1,0 +1,12 @@
+{
+    "author": ["dasKreuzer"],
+    "description": "Live server status announcements for FiveM.",
+    "install_msg": "✅ Announcements cog installed.",
+    "short": "FiveM Announcements",
+    "name": "announcements",
+    "hidden": false,
+    "disabled": false,
+    "tags": ["fivem", "status", "api"],
+    "type": "COG"
+  }
+  

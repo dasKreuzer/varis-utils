@@ -6,7 +6,7 @@ def get_config_schema(cog):
         lat=None,
         lon=None,
         alerts=["Tornado Warning", "Severe Thunderstorm Warning"],
-        admin_id=None,
+        admin_ids=[],  # ✅ Now a list of user IDs
         announcement_channel=None,
         enabled=False
     )

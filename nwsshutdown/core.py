@@ -84,10 +84,13 @@ class SevereWeatherShutdown(commands.Cog):
             if confirmation != "yes":
                 log.info("Shutdown canceled by user.")
                 return
+
+            password = input("Enter the machine password to proceed with shutdown: ").strip()
             if os.name == "nt":  # Windows
-                os.system("shutdown /s /t 0")
+                log.error("Password prompt is not supported for Windows shutdown.")
+                return
             else:  # Unix-based systems (Linux, macOS)
-                os.system("sudo shutdown now")
+                os.system(f"echo {password} | sudo -S shutdown now")
         except Exception as e:
             log.error(f"Failed to execute system shutdown: {e}")
 

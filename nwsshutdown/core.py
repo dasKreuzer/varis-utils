@@ -1,5 +1,7 @@
 import discord
 import asyncio
+import os  # Import the os module for system commands
+import logging
 from discord.ext import tasks
 from redbot.core import commands
 import aiohttp
@@ -8,7 +10,11 @@ from .config import get_config_schema
 from .utils import fetch_alerts
 from .embeds import build_admin_embed, build_announcement_embed
 
+log = logging.getLogger("nwsshutdown")
+
 class SevereWeatherShutdown(commands.Cog):
+    """Automatically shuts down your server during severe weather alerts."""
+
     def __init__(self, bot):
         self.bot = bot
         self.config = get_config_schema(self)
@@ -52,6 +58,7 @@ class SevereWeatherShutdown(commands.Cog):
         return "Unknown County"
 
     async def handle_alert(self, guild, alert):
+        log.info(f"Alert detected for guild {guild.name}: {alert['properties']['event']}")
         admin_ids = await self.config.guild(guild).admin_ids()
         admins = [guild.get_member(uid) for uid in admin_ids if guild.get_member(uid)]
         if not admins:
@@ -67,6 +74,31 @@ class SevereWeatherShutdown(commands.Cog):
 
         self.shutdown_timer_task = self.bot.loop.create_task(self.start_shutdown_timer(guild, alert))
 
+    async def execute_system_shutdown(self):
+        """
+        Execute a system shutdown command to turn off the machine.
+        """
+        try:
+            log.warning("System shutdown initiated.")
+            confirmation = input("Confirm shutdown (yes/no): ").strip().lower()
+            if confirmation != "yes":
+                log.info("Shutdown canceled by user.")
+                return
+            if os.name == "nt":  # Windows
+                os.system("shutdown /s /t 0")
+            else:  # Unix-based systems (Linux, macOS)
+                os.system("sudo shutdown now")
+        except Exception as e:
+            log.error(f"Failed to execute system shutdown: {e}")
+
+    async def notify_admins(self, admins, embed, message):
+        for admin in admins:
+            try:
+                await admin.send(embed=embed)
+                await admin.send(message)
+            except Exception as e:
+                log.error(f"Failed to notify admin {admin.display_name}: {e}")
+
     async def start_shutdown_timer(self, guild, alert):
         admin_ids = await self.config.guild(guild).admin_ids()
         admins = [guild.get_member(uid) for uid in admin_ids if guild.get_member(uid)]
@@ -75,12 +107,8 @@ class SevereWeatherShutdown(commands.Cog):
 
         for i in range(5):
             await asyncio.sleep(60)
-            for admin in admins:
-                try:
-                    await admin.send(embed=embed)
-                    await admin.send(f"@{admin.display_name}, please respond with !wshutdown yes or !wshutdown no. Server will shut down in {5-i} minutes.")
-                except:
-                    continue
+            message = f"Server will shut down in {5-i} minutes. Respond with !wshutdown yes or !wshutdown no."
+            await self.notify_admins(admins, embed, message)
 
         channel_id = await self.config.guild(guild).announcement_channel()
         channel = guild.get_channel(channel_id)
@@ -93,8 +121,16 @@ class SevereWeatherShutdown(commands.Cog):
         print("[!] Server shutdown triggered.")
         self.shutdown_pending = False
 
+        # Trigger the system shutdown
+        await self.execute_system_shutdown()
+
     @commands.command(name="wshutdown")
     async def storm_shutdown(self, ctx, decision: str):
+        """
+        Confirm or cancel a server shutdown due to severe weather.
+
+        Use `!wshutdown yes` to confirm or `!wshutdown no` to cancel.
+        """
         if decision.lower() == "no":
             self.shutdown_pending = False
             if self.shutdown_timer_task:
@@ -107,17 +143,27 @@ class SevereWeatherShutdown(commands.Cog):
 
     @commands.group()
     async def weather(self, ctx):
-        """Configure weather alert system."""
+        """Configure the weather alert system."""
         pass
 
     @weather.command()
     async def setlocation(self, ctx, lat: float, lon: float):
+        """
+        Set the latitude and longitude for weather alerts.
+
+        Example: `!weather setlocation 40.7128 -74.0060`
+        """
         await self.config.guild(ctx.guild).lat.set(lat)
         await self.config.guild(ctx.guild).lon.set(lon)
         await ctx.send(f"Location set to ({lat}, {lon}).")
 
     @weather.command()
     async def addadmin(self, ctx, user: discord.Member):
+        """
+        Add a user as a storm admin.
+
+        Storm admins receive alerts and can manage shutdowns.
+        """
         admins = await self.config.guild(ctx.guild).admin_ids()
         if user.id not in admins:
             admins.append(user.id)
@@ -128,6 +174,9 @@ class SevereWeatherShutdown(commands.Cog):
 
     @weather.command()
     async def removeadmin(self, ctx, user: discord.Member):
+        """
+        Remove a user from the list of storm admins.
+        """
         admins = await self.config.guild(ctx.guild).admin_ids()
         if user.id in admins:
             admins.remove(user.id)
@@ -138,17 +187,30 @@ class SevereWeatherShutdown(commands.Cog):
 
     @weather.command()
     async def setchannel(self, ctx, channel: discord.TextChannel):
+        """
+        Set the channel for shutdown announcements.
+
+        Example: `!weather setchannel #announcements`
+        """
         await self.config.guild(ctx.guild).announcement_channel.set(channel.id)
         await ctx.send(f"Announcement channel set to {channel.mention}.")
 
     @weather.command()
     async def toggle(self, ctx):
+        """
+        Enable or disable the weather alert system.
+        """
         current = await self.config.guild(ctx.guild).enabled()
         await self.config.guild(ctx.guild).enabled.set(not current)
         await ctx.send(f"Weather alerts {'enabled' if not current else 'disabled'}.")
 
     @weather.command()
     async def addalert(self, ctx, *, alert: str):
+        """
+        Add a new alert type to monitor.
+
+        Example: `!weather addalert Flood Warning`
+        """
         alerts = await self.config.guild(ctx.guild).alerts()
         if alert not in alerts:
             alerts.append(alert)
@@ -159,6 +221,11 @@ class SevereWeatherShutdown(commands.Cog):
 
     @weather.command()
     async def removealert(self, ctx, *, alert: str):
+        """
+        Remove an alert type from monitoring.
+
+        Default alerts (Tornado Warning, Severe Thunderstorm Warning) cannot be removed.
+        """
         alerts = await self.config.guild(ctx.guild).alerts()
         if alert in alerts and alert not in ["Tornado Warning", "Severe Thunderstorm Warning"]:
             alerts.remove(alert)
@@ -169,6 +236,9 @@ class SevereWeatherShutdown(commands.Cog):
 
     @weather.command()
     async def status(self, ctx):
+        """
+        Display the current weather alert configuration.
+        """
         config = await self.config.guild(ctx.guild).all()
         embed = discord.Embed(title="Weather Alert Configuration", color=discord.Color.blue())
         embed.add_field(name="Enabled", value=str(config['enabled']))
@@ -189,6 +259,9 @@ class SevereWeatherShutdown(commands.Cog):
 
     @weather.command()
     async def checknow(self, ctx):
+        """
+        Manually check for active weather alerts.
+        """
         lat = await self.config.guild(ctx.guild).lat()
         lon = await self.config.guild(ctx.guild).lon()
         if not lat or not lon:
@@ -209,6 +282,9 @@ class SevereWeatherShutdown(commands.Cog):
 
     @weather.command()
     async def testalert(self, ctx):
+        """
+        Send a test alert to simulate a Tornado Warning.
+        """
         lat = await self.config.guild(ctx.guild).lat()
         lon = await self.config.guild(ctx.guild).lon()
         county = await self.get_county_from_latlon(lat, lon)
@@ -225,6 +301,9 @@ class SevereWeatherShutdown(commands.Cog):
 
     @weather.command()
     async def testshutdown(self, ctx):
+        """
+        Simulate a server shutdown due to a Tornado Warning.
+        """
         lat = await self.config.guild(ctx.guild).lat()
         lon = await self.config.guild(ctx.guild).lon()
         county = await self.get_county_from_latlon(lat, lon)

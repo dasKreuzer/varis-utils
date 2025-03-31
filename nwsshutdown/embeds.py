@@ -7,7 +7,8 @@ def build_admin_embed(alert):
         description=f"**Type:** {props['event']}\n**Area:** {props['areaDesc']}\n"
                     f"**Issued By:** {props['senderName']}\n\n{props['description'][:500]}...",
         color=discord.Color.red()
-    ).set_footer(text="Reply with !wshutdown yes or !wshutdown no")
+    ).add_field(name="Expires", value=props.get("expires", "Unknown"), inline=False) \
+     .set_footer(text="Reply with !wshutdown yes or !wshutdown no")
 
 def build_announcement_embed(alert):
     props = alert["properties"]

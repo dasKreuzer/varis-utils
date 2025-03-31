@@ -78,7 +78,7 @@ class SevereWeatherShutdown(commands.Cog):
         self.shutdown_pending = False
 
     @commands.command()
-    async def shutdown(self, ctx, decision: str):
+    async def stormshutdown(self, ctx, decision: str):
         if decision.lower() == "no":
             self.shutdown_pending = False
             if self.shutdown_timer_task:

@@ -7,7 +7,7 @@ from redbot.core import commands
 import aiohttp
 
 from .config import get_config_schema
-from .utils import fetch_alerts
+from .utils import fetch_alerts, fetch_current_conditions
 from .embeds import build_admin_embed, build_announcement_embed
 
 log = logging.getLogger("nwsshutdown")
@@ -131,11 +131,23 @@ class SevereWeatherShutdown(commands.Cog):
 
         Use `!wshutdown yes` to confirm or `!wshutdown no` to cancel.
         """
+        guild = ctx.guild
+        admin_ids = await self.config.guild(guild).admin_ids()
+        admins = [guild.get_member(uid) for uid in admin_ids if guild.get_member(uid)]
+
         if decision.lower() == "no":
             self.shutdown_pending = False
             if self.shutdown_timer_task:
                 self.shutdown_timer_task.cancel()
             await ctx.send("Shutdown has been cancelled.")
+
+            # Notify all listed admins about the cancellation
+            for admin in admins:
+                try:
+                    await admin.send("The server shutdown has been canceled by an admin.")
+                except Exception as e:
+                    log.error(f"Failed to notify admin {admin.display_name}: {e}")
+
         elif decision.lower() == "yes":
             await ctx.send("Shutdown confirmed. Server will be shut down in 5 minutes.")
         else:
@@ -318,3 +330,29 @@ class SevereWeatherShutdown(commands.Cog):
         }
         self.shutdown_pending = False
         await self.handle_alert(ctx.guild, fake_alert)
+
+    @weather.command()
+    async def currentweather(self, ctx):
+        """
+        Display the current weather conditions for the configured location.
+        """
+        lat = await self.config.guild(ctx.guild).lat()
+        lon = await self.config.guild(ctx.guild).lon()
+        if not lat or not lon:
+            await ctx.send("Location not configured. Use `!weather setlocation` to set it.")
+            return
+
+        conditions = await fetch_current_conditions(lat, lon)
+        if not conditions:
+            await ctx.send("Failed to fetch current weather conditions.")
+            return
+
+        embed = discord.Embed(
+            title="Current Weather Conditions",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="Temperature", value=f"{conditions.get('temperature', {}).get('value', 'N/A')}°C")
+        embed.add_field(name="Wind Speed", value=f"{conditions.get('windSpeed', {}).get('value', 'N/A')} km/h")
+        embed.add_field(name="Humidity", value=f"{conditions.get('relativeHumidity', {}).get('value', 'N/A')}%")
+        embed.set_footer(text="Data provided by the National Weather Service")
+        await ctx.send(embed=embed)

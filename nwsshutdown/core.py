@@ -4,6 +4,7 @@ from discord.ext import tasks
 from .config import get_config_schema
 from .utils import fetch_alerts
 from .embeds import build_admin_embed, build_announcement_embed
+from redbot.core import commands 
 
 class SevereWeatherShutdown(commands.Cog):
     def __init__(self, bot):

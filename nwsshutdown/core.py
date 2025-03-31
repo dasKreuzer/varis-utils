@@ -374,20 +374,24 @@ class SevereWeatherShutdown(commands.Cog):
         """
         Display the latest mesoscale discussions from the SPC.
         """
-        discussions = await fetch_mesoscale_discussions()
-        if not discussions:
-            await ctx.send("Failed to fetch mesoscale discussions. Please try again later.")
-            return
+        try:
+            discussions = await fetch_mesoscale_discussions()
+            if not discussions:
+                await ctx.send("No mesoscale discussions available at the moment.")
+                return
 
-        embed = discord.Embed(
-            title="Latest Mesoscale Discussions",
-            color=discord.Color.green()
-        )
-        for discussion in discussions[:5]:  # Limit to the latest 5 discussions
-            embed.add_field(
-                name=discussion["title"],
-                value=f"[Read more]({discussion['link']})",
-                inline=False
+            embed = discord.Embed(
+                title="Latest Mesoscale Discussions",
+                color=discord.Color.green()
             )
-        embed.set_footer(text="Data provided by the Storm Prediction Center (SPC)")
-        await ctx.send(embed=embed)
+            for discussion in discussions[:5]:  # Limit to the latest 5 discussions
+                embed.add_field(
+                    name=discussion["title"],
+                    value=f"[Read more]({discussion['link']})",
+                    inline=False
+                )
+            embed.set_footer(text="Data provided by the Storm Prediction Center (SPC)")
+            await ctx.send(embed=embed)
+        except Exception as e:
+            log.error(f"Failed to fetch mesoscale discussions: {e}")
+            await ctx.send("Failed to fetch mesoscale discussions. Please try again later.")

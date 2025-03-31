@@ -136,7 +136,8 @@ class SevereWeatherShutdown(commands.Cog):
         """
         guild = ctx.guild
         if not guild:
-            await ctx.send("This command can only be used in a server.")
+            # Handle DM context
+            await ctx.send("This command can only be used in a server context to manage shutdowns.")
             return
 
         admin_ids = await self.config.guild(guild).admin_ids()

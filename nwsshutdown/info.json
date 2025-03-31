@@ -8,6 +8,6 @@
     "tags": ["weather", "shutdown", "nws", "alerts", "automation"],
     "type": "COG",
     "end_user_data_statement": "This cog stores configuration per server for weather monitoring and alert notifications.",
-    "version": "1.1.01"
+    "version": "1.1.1"
   }
   

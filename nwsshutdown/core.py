@@ -344,7 +344,7 @@ class SevereWeatherShutdown(commands.Cog):
 
         conditions = await fetch_current_conditions(lat, lon)
         if not conditions:
-            await ctx.send("Failed to fetch current weather conditions.")
+            await ctx.send("Failed to fetch current weather conditions. Please ensure the location is valid and try again.")
             return
 
         embed = discord.Embed(

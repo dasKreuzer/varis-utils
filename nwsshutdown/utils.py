@@ -5,7 +5,7 @@ log = logging.getLogger("nwsshutdown")
 
 async def fetch_alerts(lat, lon):
     url = f"https://api.weather.gov/alerts/active?point={lat},{lon}"
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession() as session:  # Reuse session
         try:
             async with session.get(url) as resp:
                 if resp.status != 200:
@@ -22,23 +22,32 @@ async def fetch_current_conditions(lat, lon):
     Fetch the current weather conditions for a given latitude and longitude.
     """
     try:
-        # Get the weather station ID from the point endpoint
-        point_url = f"https://api.weather.gov/points/{lat},{lon}"
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession() as session:  # Reuse session
+            # Get the weather station ID from the point endpoint
+            point_url = f"https://api.weather.gov/points/{lat},{lon}"
             async with session.get(point_url) as point_resp:
                 if point_resp.status != 200:
                     log.error(f"Failed to fetch station info: HTTP {point_resp.status}")
                     return None
                 point_data = await point_resp.json()
-                station_id = point_data.get("properties", {}).get("observationStations", "").split("/")[-1]
+                station_url = point_data.get("properties", {}).get("observationStations")
+                if not station_url:
+                    log.error("No observation stations found for the given location.")
+                    return None
 
-        # Fetch the latest observation from the station
-        if not station_id:
-            log.error("No station ID found for the given location.")
-            return None
+            # Fetch the latest observation from the first station
+            async with session.get(station_url) as stations_resp:
+                if stations_resp.status != 200:
+                    log.error(f"Failed to fetch station list: HTTP {stations_resp.status}")
+                    return None
+                stations_data = await stations_resp.json()
+                stations = stations_data.get("observationStations", [])
+                if not stations:
+                    log.error("No stations available for the given location.")
+                    return None
+                station_id = stations[0].split("/")[-1]
 
-        obs_url = f"https://api.weather.gov/stations/{station_id}/observations/latest"
-        async with aiohttp.ClientSession() as session:
+            obs_url = f"https://api.weather.gov/stations/{station_id}/observations/latest"
             async with session.get(obs_url) as obs_resp:
                 if obs_resp.status != 200:
                     log.error(f"Failed to fetch current conditions: HTTP {obs_resp.status}")

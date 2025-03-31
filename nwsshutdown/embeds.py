@@ -2,10 +2,11 @@ import discord
 
 def build_admin_embed(alert):
     props = alert["properties"]
+    description = props['description'][:500] + "..." if len(props['description']) > 500 else props['description']
     return discord.Embed(
         title="\u26a0\ufe0f Severe Weather Alert Detected",
         description=f"**Type:** {props['event']}\n**Area:** {props['areaDesc']}\n"
-                    f"**Issued By:** {props['senderName']}\n\n{props['description'][:500]}...",
+                    f"**Issued By:** {props['senderName']}\n\n{description}",
         color=discord.Color.red()
     ).add_field(name="Expires", value=props.get("expires", "Unknown"), inline=False) \
      .set_footer(text="Reply with !wshutdown yes or !wshutdown no")

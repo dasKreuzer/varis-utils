@@ -105,7 +105,10 @@ class SevereWeatherShutdown(commands.Cog):
         else:
             await ctx.send("Please use `!wshutdown yes` or `!wshutdown no`.")
 
-    # ... (other unchanged commands omitted for brevity) ...
+    @commands.group()
+    async def weather(self, ctx):
+        """Configure weather alert system."""
+        pass
 
     @weather.command()
     async def testalert(self, ctx):

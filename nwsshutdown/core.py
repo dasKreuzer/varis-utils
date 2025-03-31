@@ -251,6 +251,10 @@ class SevereWeatherShutdown(commands.Cog):
         """
         Display the current weather alert configuration.
         """
+        if not ctx.guild:
+            await ctx.send("This command can only be used in a server.")
+            return
+
         config = await self.config.guild(ctx.guild).all()
         embed = discord.Embed(title="Weather Alert Configuration", color=discord.Color.blue())
         embed.add_field(name="Enabled", value=str(config['enabled']))
@@ -274,6 +278,10 @@ class SevereWeatherShutdown(commands.Cog):
         """
         Manually check for active weather alerts.
         """
+        if not ctx.guild:
+            await ctx.send("This command can only be used in a server.")
+            return
+
         lat = await self.config.guild(ctx.guild).lat()
         lon = await self.config.guild(ctx.guild).lon()
         if not lat or not lon:

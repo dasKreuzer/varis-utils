@@ -4,9 +4,9 @@
     "description": "Automatically shuts down your server in the event of a Tornado or Severe Thunderstorm warning.",
     "install_msg": "Thank you for installing the Severe Weather Shutdown cog!",
     "short": "Storm-triggered shutdown automation.",
-    "requirements": [],
+    "requirements": ["beautifulsoup4"],
     "tags": ["weather", "shutdown", "nws", "alerts", "automation"],
     "type": "COG",
     "end_user_data_statement": "This cog stores configuration per server for weather monitoring and alert notifications.",
-    "version": "1.2.2"
+    "version": "1.2.3"
 }

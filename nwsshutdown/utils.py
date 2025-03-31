@@ -50,6 +50,9 @@ async def fetch_current_conditions(lat, lon):
 
             obs_url = f"https://api.weather.gov/stations/{station_id}/observations/latest"
             async with session.get(obs_url) as obs_resp:
+                if obs_resp.status == 404:
+                    log.error(f"Station {station_id} does not have current observations.")
+                    return None
                 if obs_resp.status != 200:
                     log.error(f"Failed to fetch current conditions: HTTP {obs_resp.status}")
                     return None

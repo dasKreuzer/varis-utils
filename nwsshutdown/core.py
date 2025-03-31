@@ -127,34 +127,13 @@ class SevereWeatherShutdown(commands.Cog):
 
         elif decision.lower() == "yes":
             self.shutdown_pending = False  # Stop sending alerts
-            await ctx.send("Shutdown confirmed. Please enter the machine password to proceed.")
-            password = await self.prompt_for_password(ctx)
-            if password:
-                await ctx.send("The server will shut down in 30 seconds.")
-                await asyncio.sleep(30)  # Wait 30 seconds before forcing shutdown
-                await self.execute_system_shutdown(password)
-            else:
-                await ctx.send("Shutdown aborted due to missing or incorrect password.")
+            await ctx.send("Shutdown confirmed. The server will shut down in 30 seconds.")
+            await asyncio.sleep(30)  # Wait 30 seconds before forcing shutdown
+            await self.execute_system_shutdown()
         else:
             await ctx.send("Please use `!wshutdown yes` or `!wshutdown no`.")
 
-    async def prompt_for_password(self, ctx):
-        """
-        Prompt the user for the machine password in a DM.
-        """
-        try:
-            await ctx.send("Enter the machine password:")
-            msg = await self.bot.wait_for(
-                "message",
-                check=lambda m: m.author == ctx.author and isinstance(m.channel, discord.DMChannel),
-                timeout=60
-            )
-            return msg.content.strip()
-        except asyncio.TimeoutError:
-            await ctx.send("Password prompt timed out.")
-            return None
-
-    async def execute_system_shutdown(self, password):
+    async def execute_system_shutdown(self):
         """
         Execute a system shutdown command to turn off the machine.
         """
@@ -163,7 +142,7 @@ class SevereWeatherShutdown(commands.Cog):
             if os.name == "nt":  # Windows
                 os.system("shutdown /s /t 0")
             else:  # Unix-based systems (Linux, macOS)
-                os.system(f"echo {password} | sudo -S shutdown now")
+                os.system("sudo shutdown now")  # Use sudo without requiring a password
         except Exception as e:
             log.error(f"Failed to execute system shutdown: {e}")
 

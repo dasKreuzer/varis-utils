@@ -74,26 +74,6 @@ class SevereWeatherShutdown(commands.Cog):
 
         self.shutdown_timer_task = self.bot.loop.create_task(self.start_shutdown_timer(guild, alert))
 
-    async def execute_system_shutdown(self):
-        """
-        Execute a system shutdown command to turn off the machine.
-        """
-        try:
-            log.warning("System shutdown initiated.")
-            confirmation = input("Confirm shutdown (yes/no): ").strip().lower()
-            if confirmation != "yes":
-                log.info("Shutdown canceled by user.")
-                return
-
-            password = input("Enter the machine password to proceed with shutdown: ").strip()
-            if os.name == "nt":  # Windows
-                log.error("Password prompt is not supported for Windows shutdown.")
-                return
-            else:  # Unix-based systems (Linux, macOS)
-                os.system(f"echo {password} | sudo -S shutdown now")
-        except Exception as e:
-            log.error(f"Failed to execute system shutdown: {e}")
-
     async def notify_admins(self, admins, embed, message):
         for admin in admins:
             try:
@@ -134,32 +114,58 @@ class SevereWeatherShutdown(commands.Cog):
 
         Use `!wshutdown yes` to confirm or `!wshutdown no` to cancel.
         """
-        guild = ctx.guild
-        if not guild:
-            # Handle DM context
-            await ctx.send("This command can only be used in a server context to manage shutdowns.")
+        if ctx.guild:
+            await ctx.send("This command can only be used in DMs to manage shutdowns.")
             return
-
-        admin_ids = await self.config.guild(guild).admin_ids()
-        admins = [guild.get_member(uid) for uid in admin_ids if guild.get_member(uid)]
 
         if decision.lower() == "no":
             self.shutdown_pending = False
             if self.shutdown_timer_task:
                 self.shutdown_timer_task.cancel()
-            await ctx.send("Shutdown has been cancelled.")
-
-            # Notify all listed admins about the cancellation
-            for admin in admins:
-                try:
-                    await admin.send("The server shutdown has been canceled by an admin.")
-                except Exception as e:
-                    log.error(f"Failed to notify admin {admin.display_name}: {e}")
+            await ctx.send("Shutdown has been cancelled. Alerts will resume.")
+            return
 
         elif decision.lower() == "yes":
-            await ctx.send("Shutdown confirmed. Server will be shut down in 5 minutes.")
+            self.shutdown_pending = False  # Stop sending alerts
+            await ctx.send("Shutdown confirmed. Please enter the machine password to proceed.")
+            password = await self.prompt_for_password(ctx)
+            if password:
+                await ctx.send("The server will shut down in 30 seconds.")
+                await asyncio.sleep(30)  # Wait 30 seconds before forcing shutdown
+                await self.execute_system_shutdown(password)
+            else:
+                await ctx.send("Shutdown aborted due to missing or incorrect password.")
         else:
             await ctx.send("Please use `!wshutdown yes` or `!wshutdown no`.")
+
+    async def prompt_for_password(self, ctx):
+        """
+        Prompt the user for the machine password in a DM.
+        """
+        try:
+            await ctx.send("Enter the machine password:")
+            msg = await self.bot.wait_for(
+                "message",
+                check=lambda m: m.author == ctx.author and isinstance(m.channel, discord.DMChannel),
+                timeout=60
+            )
+            return msg.content.strip()
+        except asyncio.TimeoutError:
+            await ctx.send("Password prompt timed out.")
+            return None
+
+    async def execute_system_shutdown(self, password):
+        """
+        Execute a system shutdown command to turn off the machine.
+        """
+        try:
+            log.warning("System shutdown initiated.")
+            if os.name == "nt":  # Windows
+                os.system("shutdown /s /t 0")
+            else:  # Unix-based systems (Linux, macOS)
+                os.system(f"echo {password} | sudo -S shutdown now")
+        except Exception as e:
+            log.error(f"Failed to execute system shutdown: {e}")
 
     @commands.group()
     async def weather(self, ctx):

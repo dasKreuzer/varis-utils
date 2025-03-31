@@ -1,10 +1,13 @@
 {
-    "author": ["Varis"],
-    "description": "Automatically shuts down servers when severe weather alerts (like tornado or thunderstorm warnings) are detected via the National Weather Service API.",
-    "install_msg": "Thanks for installing SevereWeatherShutdown! Use [p]weather to configure.",
-    "short": "Severe weather server auto-shutdown.",
-    "tags": ["weather", "automation", "server", "shutdown", "safety"],
-    "requirements": ["aiohttp"],
-    "type": "COG"
+    "author": ["dasKreuzer"],
+    "name": "NWSSHUTDOWN",
+    "description": "Automatically shuts down your server in the event of a Tornado or Severe Thunderstorm warning.",
+    "install_msg": "Thank you for installing the Severe Weather Shutdown cog!",
+    "short": "Storm-triggered shutdown automation.",
+    "requirements": [],
+    "tags": ["weather", "shutdown", "nws", "alerts", "automation"],
+    "type": "COG",
+    "end_user_data_statement": "This cog stores configuration per server for weather monitoring and alert notifications.",
+    "version": "1.1.0"
   }
   

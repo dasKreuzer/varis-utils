@@ -347,11 +347,15 @@ class SevereWeatherShutdown(commands.Cog):
             await ctx.send("Failed to fetch current weather conditions. Please ensure the location is valid and try again.")
             return
 
+        # Convert temperature from Celsius to Fahrenheit if available
+        temp_celsius = conditions.get('temperature', {}).get('value')
+        temp_fahrenheit = (temp_celsius * 9/5 + 32) if temp_celsius is not None else "N/A"
+
         embed = discord.Embed(
             title="Current Weather Conditions",
             color=discord.Color.blue()
         )
-        embed.add_field(name="Temperature", value=f"{conditions.get('temperature', {}).get('value', 'N/A')}°C")
+        embed.add_field(name="Temperature", value=f"{temp_fahrenheit}°F")
         embed.add_field(name="Wind Speed", value=f"{conditions.get('windSpeed', {}).get('value', 'N/A')} km/h")
         embed.add_field(name="Humidity", value=f"{conditions.get('relativeHumidity', {}).get('value', 'N/A')}%")
         embed.set_footer(text="Data provided by the National Weather Service")

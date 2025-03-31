@@ -135,6 +135,10 @@ class SevereWeatherShutdown(commands.Cog):
         Use `!wshutdown yes` to confirm or `!wshutdown no` to cancel.
         """
         guild = ctx.guild
+        if not guild:
+            await ctx.send("This command can only be used in a server.")
+            return
+
         admin_ids = await self.config.guild(guild).admin_ids()
         admins = [guild.get_member(uid) for uid in admin_ids if guild.get_member(uid)]
 

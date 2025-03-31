@@ -1,6 +1,6 @@
 import discord
 import asyncio
-from redbot.core import commands, tasks
+from discord.ext import tasks
 from .config import get_config_schema
 from .utils import fetch_alerts
 from .embeds import build_admin_embed, build_announcement_embed

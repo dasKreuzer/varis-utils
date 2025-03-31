@@ -1,5 +1,6 @@
 import aiohttp
 import logging
+from bs4 import BeautifulSoup
 
 log = logging.getLogger("nwsshutdown")
 
@@ -56,4 +57,32 @@ async def fetch_current_conditions(lat, lon):
                 return obs_data.get("properties", {})
     except Exception as e:
         log.error(f"Error fetching current conditions: {e}")
+        return None
+
+async def fetch_mesoscale_discussions():
+    """
+    Fetch the latest mesoscale discussions from the SPC.
+    """
+    url = "https://www.spc.noaa.gov/products/md/"
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status != 200:
+                    log.error(f"Failed to fetch mesoscale discussions: HTTP {resp.status}")
+                    return None
+                html = await resp.text()
+
+        # Parse the HTML to extract mesoscale discussions (basic scraping)
+        soup = BeautifulSoup(html, "html.parser")
+        discussions = []
+        for item in soup.select("pre a"):
+            if "md" in item["href"]:  # Filter links to mesoscale discussions
+                discussions.append({
+                    "title": item.text.strip(),
+                    "link": f"https://www.spc.noaa.gov/products/md/{item['href']}"
+                })
+
+        return discussions
+    except Exception as e:
+        log.error(f"Error fetching mesoscale discussions: {e}")
         return None

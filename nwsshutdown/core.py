@@ -7,7 +7,7 @@ from redbot.core import commands
 import aiohttp
 
 from .config import get_config_schema
-from .utils import fetch_alerts, fetch_current_conditions
+from .utils import fetch_alerts, fetch_current_conditions, fetch_mesoscale_discussions
 from .embeds import build_admin_embed, build_announcement_embed
 
 log = logging.getLogger("nwsshutdown")
@@ -359,4 +359,27 @@ class SevereWeatherShutdown(commands.Cog):
         embed.add_field(name="Wind Speed", value=f"{conditions.get('windSpeed', {}).get('value', 'N/A')} km/h")
         embed.add_field(name="Humidity", value=f"{conditions.get('relativeHumidity', {}).get('value', 'N/A')}%")
         embed.set_footer(text="Data provided by the National Weather Service")
+        await ctx.send(embed=embed)
+
+    @weather.command()
+    async def mesoscale(self, ctx):
+        """
+        Display the latest mesoscale discussions from the SPC.
+        """
+        discussions = await fetch_mesoscale_discussions()
+        if not discussions:
+            await ctx.send("Failed to fetch mesoscale discussions. Please try again later.")
+            return
+
+        embed = discord.Embed(
+            title="Latest Mesoscale Discussions",
+            color=discord.Color.green()
+        )
+        for discussion in discussions[:5]:  # Limit to the latest 5 discussions
+            embed.add_field(
+                name=discussion["title"],
+                value=f"[Read more]({discussion['link']})",
+                inline=False
+            )
+        embed.set_footer(text="Data provided by the Storm Prediction Center (SPC)")
         await ctx.send(embed=embed)

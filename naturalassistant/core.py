@@ -37,41 +37,7 @@ class NaturalAssistant(commands.Cog):
         except Exception as e:
             log.error(f"Error in resource monitoring loop: {e}")
 
-    @commands.command()
-    async def setmonitorinterval(self, ctx, minutes: int):
-        """Set the interval (in minutes) for resource monitoring."""
-        if minutes < 1:
-            await ctx.send("Interval must be at least 1 minute.")
-            return
-        self.resource_monitor_interval = minutes
-        self.resource_monitor_loop.change_interval(minutes=minutes)
-        await ctx.send(f"Resource monitoring interval set to {minutes} minutes.")
-        log.info(f"Resource monitoring interval updated to {minutes} minutes by {ctx.author}.")
-
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.author.bot or not message.guild:
-            return
-
-        try:
-            # Check if the message matches an intent
-            intent = await match_intent(message.content, self.config_manager)
-            if intent:
-                allowed_roles = intent.get("roles", [])
-                if not await check_user_permission(message.author, allowed_roles):
-                    await message.channel.send("Sorry, you don't have permission to do that.")
-                    return
-
-                action = intent["action"]
-                server_id = intent["server_id"]
-                response = await self.ptero_api.handle_action(action, server_id)
-                formatted_response = await format_response_with_gpt(response)
-                await message.channel.send(formatted_response)
-        except Exception as e:
-            log.error(f"Error processing message: {e}")
-            await message.channel.send("An error occurred while processing your request.")
-
-    @commands.group(invoke_without_command=True)
+    @commands.group(name="red", invoke_without_command=True)
     async def red(self, ctx):
         """Configure the Red assistant."""
         if ctx.invoked_subcommand is None:
@@ -126,3 +92,37 @@ class NaturalAssistant(commands.Cog):
         await self.config_manager.set_gpt_api_key(api_key)
         await ctx.send("OpenAI GPT API key set.")
         log.info(f"OpenAI GPT API key set by {ctx.author}.")
+
+    @commands.command(name="setmonitorinterval")
+    async def setmonitorinterval(self, ctx, minutes: int):
+        """Set the interval (in minutes) for resource monitoring."""
+        if minutes < 1:
+            await ctx.send("Interval must be at least 1 minute.")
+            return
+        self.resource_monitor_interval = minutes
+        self.resource_monitor_loop.change_interval(minutes=minutes)
+        await ctx.send(f"Resource monitoring interval set to {minutes} minutes.")
+        log.info(f"Resource monitoring interval updated to {minutes} minutes by {ctx.author}.")
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.bot or not message.guild:
+            return
+
+        try:
+            # Check if the message matches an intent
+            intent = await match_intent(message.content, self.config_manager)
+            if intent:
+                allowed_roles = intent.get("roles", [])
+                if not await check_user_permission(message.author, allowed_roles):
+                    await message.channel.send("Sorry, you don't have permission to do that.")
+                    return
+
+                action = intent["action"]
+                server_id = intent["server_id"]
+                response = await self.ptero_api.handle_action(action, server_id)
+                formatted_response = await format_response_with_gpt(response)
+                await message.channel.send(formatted_response)
+        except Exception as e:
+            log.error(f"Error processing message: {e}")
+            await message.channel.send("An error occurred while processing your request.")

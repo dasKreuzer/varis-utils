@@ -22,4 +22,10 @@ class Announcements(commands.Cog):
         await ctx.send(f"✅ Status updated: `{status}`")
 
     def get_latest(self):
-        return self.latest_announcement
+        # Ensure the data is in a format suitable for JavaScript
+        return {
+            "username": self.latest_announcement["username"],
+            "avatar": self.latest_announcement["avatar"],
+            "message": self.latest_announcement["message"],
+            "timestamp": datetime.datetime.now().isoformat()
+        }

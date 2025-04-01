@@ -48,10 +48,19 @@ class NaturalAssistant(commands.Cog):
         self.resource_monitor_loop.cancel()
         log.info("NaturalAssistant cog unloaded.")
 
+    async def get_features(self):
+        """Safely retrieve the features configuration group."""
+        try:
+            return await self.config.custom("features").all()
+        except ValueError:
+            # Initialize the features group if it is not already initialized
+            await self.config.custom("features").set({})
+            return {"resource_monitoring": False, "intent_handling": False}
+
     @tasks.loop(minutes=5)
     async def resource_monitor_loop(self):
         try:
-            features = await self.config.custom("features").all()
+            features = await self.get_features()
             if not features.get("resource_monitoring", False):
                 return  # Skip if resource monitoring is disabled
 
@@ -202,14 +211,14 @@ class NaturalAssistant(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        features = await self.config.custom("features").all()
-        if not features.get("intent_handling", False):
-            return  # Skip if intent handling is disabled
-
-        if message.author.bot or not message.guild:
-            return
-
         try:
+            features = await self.get_features()
+            if not features.get("intent_handling", False):
+                return  # Skip if intent handling is disabled
+
+            if message.author.bot or not message.guild:
+                return
+
             # Check if the user is an admin
             is_admin = message.author.guild_permissions.administrator
 

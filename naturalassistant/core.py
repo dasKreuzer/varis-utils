@@ -46,30 +46,31 @@ class NaturalAssistant(commands.Cog):
             formatted_response = await format_response_with_gpt(response)
             await message.channel.send(formatted_response)
 
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     async def red(self, ctx):
         """Configure the Red assistant."""
-        pass
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
 
-    @red.command()
+    @red.command(name="setchannel")
     async def setchannel(self, ctx, channel: discord.TextChannel):
         """Set the channel the Red assistant listens to."""
         await self.config.guild(ctx.guild).listening_channel.set(channel.id)
         await ctx.send(f"Listening channel set to {channel.mention}.")
 
-    @red.command()
+    @red.command(name="addintent")
     async def addintent(self, ctx, phrase: str, action: str, server_id: str, *roles: discord.Role):
         """Add a new intent mapping."""
         await self.config_manager.add_intent(phrase, action, server_id, [role.id for role in roles])
         await ctx.send(f"Intent '{phrase}' added.")
 
-    @red.command()
+    @red.command(name="removeintent")
     async def removeintent(self, ctx, phrase: str):
         """Remove an intent mapping."""
         await self.config_manager.remove_intent(phrase)
         await ctx.send(f"Intent '{phrase}' removed.")
 
-    @red.command()
+    @red.command(name="listintents")
     async def listintents(self, ctx):
         """List all mapped intents."""
         intents = await self.config_manager.list_intents()
@@ -81,13 +82,13 @@ class NaturalAssistant(commands.Cog):
             embed.add_field(name=phrase, value=f"Action: {intent['action']}, Server: {intent['server_id']}", inline=False)
         await ctx.send(embed=embed)
 
-    @red.command()
+    @red.command(name="setapikey")
     async def setapikey(self, ctx, api_key: str):
         """Set the Pterodactyl API key."""
         await self.config_manager.set_ptero_api_key(api_key)
         await ctx.send("Pterodactyl API key set.")
 
-    @red.command()
+    @red.command(name="setgptkey")
     async def setgptkey(self, ctx, api_key: str):
         """Set the OpenAI GPT API key."""
         await self.config_manager.set_gpt_api_key(api_key)

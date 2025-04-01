@@ -34,9 +34,14 @@ async def send_warning_to_admins(bot, warnings):
     if not warnings:
         return
 
+    cog = bot.get_cog("NaturalAssistant")
+    if not cog:
+        log.error("NaturalAssistant cog is not loaded. Cannot send warnings to admins.")
+        return
+
     for guild in bot.guilds:
         try:
-            admin_ids = await bot.get_cog("NaturalAssistant").config.guild(guild).admin_ids()
+            admin_ids = await cog.config.guild(guild).admin_ids()
             for admin_id in admin_ids:
                 admin = guild.get_member(admin_id)
                 if admin:

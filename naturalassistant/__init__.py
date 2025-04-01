@@ -1,8 +1,13 @@
 from .core import NaturalAssistant
+import loggingimport logging
 
-async def setup(bot):
-    try:
+log = logging.getLogger("red.naturalassistant")f setup(bot):
+
+async def setup(bot):s awaited
+    try:"red.naturalassistant").info("NaturalAssistant cog successfully loaded.")
         await bot.add_cog(NaturalAssistant(bot))
-        bot.log.info("NaturalAssistant cog successfully loaded.")
-    except Exception as e:
-        bot.log.error(f"Failed to load NaturalAssistant cog: {e}")
+        log.info("NaturalAssistant cog successfully loaded.")        logging.getLogger("red.naturalassistant").error(f"Failed to load NaturalAssistant cog: {e}")
+
+
+
+        log.error(f"Failed to load NaturalAssistant cog: {e}")    except Exception as e:

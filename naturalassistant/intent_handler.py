@@ -14,4 +14,5 @@ async def match_intent(message, config_manager):
         )
         return eval(predicted_intent)  # Convert GPT's JSON-like response to a Python dictionary
     except Exception:
-        return None
+        # Return a fallback response if GPT fails
+        return {"action": "default", "server_id": None, "roles": []}

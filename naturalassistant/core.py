@@ -258,30 +258,10 @@ class NaturalAssistant(commands.Cog):
 
                 await self.send_message_with_cooldown(message.channel, formatted_response)
             else:
-                # If no intent matches, check for basic phrases
-                try:
-                    # Attempt to use GPT for unmatched messages
-                    gpt_response = await format_response_with_gpt(message.content)
-                    await self.send_message_with_cooldown(message.channel, gpt_response)
-
-                    # Save the learned intent if GPT response is successful
-                    predicted_intent = await format_response_with_gpt(
-                        f"Predict the intent of this message: '{message.content}'. "
-                        "Return the action, server_id, and roles in JSON format."
-                    )
-                    learned_intent = eval(predicted_intent)  # Convert GPT's JSON-like response to a Python dictionary
-                    if "action" in learned_intent and "server_id" in learned_intent:
-                        await self.save_learned_intent(
-                            phrase=message.content.lower(),
-                            action=learned_intent["action"],
-                            server_id=learned_intent["server_id"],
-                            roles=learned_intent.get("roles", [])
-                        )
-                except Exception as e:
-                    log.error(f"GPT error for unmatched message: {e}")
-                    # Fallback to predefined phrases if GPT fails
-                    fallback_response = await self.get_fallback_response(message.content)
-                    await self.send_message_with_cooldown(message.channel, fallback_response)
+                # If no intent matches, fallback to default phrases
+                fallback_response = await self.get_fallback_response(message.content)
+                await self.send_message_with_cooldown(message.channel, fallback_response)
         except Exception as e:
             log.error(f"Error processing message: {e}")
-            await self.send_message_with_cooldown(message.channel, "An error occurred while processing your request.")
+            fallback_response = await self.get_fallback_response("default")
+            await self.send_message_with_cooldown(message.channel, fallback_response)

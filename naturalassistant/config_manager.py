@@ -18,18 +18,26 @@ class ConfigManager:
 
     async def set_ptero_api_key(self, api_key):
         api_keys = await self.config.custom("api_keys").all()
+        if not api_keys:
+            api_keys = {"ptero": None, "gpt": None}  # Ensure default structure
         api_keys["ptero"] = api_key
         await self.config.custom("api_keys").set(api_keys)
 
     async def get_ptero_api_key(self):
         api_keys = await self.config.custom("api_keys").all()
+        if not api_keys:
+            api_keys = {"ptero": None, "gpt": None}  # Ensure default structure
         return api_keys.get("ptero", None)
 
     async def set_gpt_api_key(self, api_key):
         api_keys = await self.config.custom("api_keys").all()
+        if not api_keys:
+            api_keys = {"ptero": None, "gpt": None}  # Ensure default structure
         api_keys["gpt"] = api_key
         await self.config.custom("api_keys").set(api_keys)
 
     async def get_gpt_api_key(self):
         api_keys = await self.config.custom("api_keys").all()
+        if not api_keys:
+            api_keys = {"ptero": None, "gpt": None}  # Ensure default structure
         return api_keys.get("gpt", None)

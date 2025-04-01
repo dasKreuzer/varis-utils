@@ -41,11 +41,34 @@ class NaturalAssistant(commands.Cog):
         })
         self.config.register_guild(admin_ids=[], listening_channel=None)
 
+    async def initialize_config(self):
+        """Ensure all required configuration groups are initialized."""
+        try:
+            await self.config.custom("features").set_default({"resource_monitoring": False, "intent_handling": False})
+            await self.config.custom("fallback_phrases").set_default({
+                "restart server": "The server is being restarted. Please wait a moment.",
+                "check status": "The server status is being checked. Please hold on.",
+                "hi": "Hello! How can I assist you today?",
+                "hello": "Hi there! What can I do for you?",
+                "how are you": "I'm just a bot, but I'm here to help! How can I assist you?",
+                "default": "I'm sorry, I can't process that request right now."
+            })
+            await self.config.custom("thresholds").set_default({"cpu": 80, "memory": 80, "disk": 80})
+            await self.config.custom("api_keys").set_default({"ptero": None, "gpt": None})
+            await self.config.custom("rate_limit").set_default({"max_requests": 5, "time_window": 60})
+            log.info("Configuration groups initialized successfully.")
+        except Exception as e:
+            log.error(f"Error initializing configuration groups: {e}")
+
+    async def cog_load(self):
+        """Run initialization tasks when the cog is loaded."""
+        await self.initialize_config()
         self.resource_monitor_loop.change_interval(minutes=self.resource_monitor_interval)
         self.resource_monitor_loop.start()
         log.info("NaturalAssistant cog initialized.")
 
     def cog_unload(self):
+        """Clean up tasks when the cog is unloaded."""
         self.resource_monitor_loop.cancel()
         log.info("NaturalAssistant cog unloaded.")
 

@@ -8,5 +8,5 @@
     "tags": ["red", "assistant", "pterodactyl", "server", "monitoring"],
     "type": "COG",
     "end_user_data_statement": "This cog stores configuration data for intents, API keys, and server thresholds.",
-    "version": "1.0.2"
+    "version": "1.0.3"
 }

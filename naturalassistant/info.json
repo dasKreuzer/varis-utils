@@ -1,0 +1,12 @@
+{
+    "author": ["Varis/dasKreuzer"],
+    "name": "NaturalAssistant",
+    "description": "A Red-powered assistant with Pterodactyl integration and server resource monitoring.",
+    "install_msg": "Thank you for installing NaturalAssistant! Use `!red` commands to configure the assistant.",
+    "short": "Red-powered assistant for server management.",
+    "requirements": ["aiohttp", "openai", "psutil"],
+    "tags": ["red", "assistant", "pterodactyl", "server", "monitoring"],
+    "type": "COG",
+    "end_user_data_statement": "This cog stores configuration data for intents, API keys, and server thresholds.",
+    "version": "1.0.1"
+}

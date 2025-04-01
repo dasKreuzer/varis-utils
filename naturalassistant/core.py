@@ -1,0 +1,94 @@
+import discord
+from discord.ext import tasks
+from redbot.core import commands, Config
+from .intent_handler import match_intent
+from .permission_checker import check_user_permission
+from .pterodactyl_api import PterodactylAPI
+from .gpt_formatter import format_response_with_gpt
+from .config_manager import ConfigManager
+from .resource_monitor import check_system_resources, send_warning_to_admins
+
+class NaturalAssistant(commands.Cog):
+    """Red-powered assistant with Pterodactyl integration and resource monitoring."""
+
+    def __init__(self, bot):
+        self.bot = bot
+        self.config = Config.get_conf(self, identifier=9876543210)
+        self.config_manager = ConfigManager(self.config)
+        self.ptero_api = PterodactylAPI(self.config_manager)
+        self.resource_monitor_loop.start()
+
+    def cog_unload(self):
+        self.resource_monitor_loop.cancel()
+
+    @tasks.loop(minutes=5)
+    async def resource_monitor_loop(self):
+        warnings = await check_system_resources(self.config_manager)
+        if warnings:
+            await send_warning_to_admins(self.bot, warnings)
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.bot or not message.guild:
+            return
+
+        # Check if the message matches an intent
+        intent = await match_intent(message.content, self.config_manager)
+        if intent:
+            allowed_roles = intent.get("roles", [])
+            if not await check_user_permission(message.author, allowed_roles):
+                await message.channel.send("Sorry, you don't have permission to do that.")
+                return
+
+            action = intent["action"]
+            server_id = intent["server_id"]
+            response = await self.ptero_api.handle_action(action, server_id)
+            formatted_response = await format_response_with_gpt(response)
+            await message.channel.send(formatted_response)
+
+    @commands.group()
+    async def red(self, ctx):
+        """Configure the Red assistant."""
+        pass
+
+    @red.command()
+    async def setchannel(self, ctx, channel: discord.TextChannel):
+        """Set the channel the Red assistant listens to."""
+        await self.config.guild(ctx.guild).listening_channel.set(channel.id)
+        await ctx.send(f"Listening channel set to {channel.mention}.")
+
+    @red.command()
+    async def addintent(self, ctx, phrase: str, action: str, server_id: str, *roles: discord.Role):
+        """Add a new intent mapping."""
+        await self.config_manager.add_intent(phrase, action, server_id, [role.id for role in roles])
+        await ctx.send(f"Intent '{phrase}' added.")
+
+    @red.command()
+    async def removeintent(self, ctx, phrase: str):
+        """Remove an intent mapping."""
+        await self.config_manager.remove_intent(phrase)
+        await ctx.send(f"Intent '{phrase}' removed.")
+
+    @red.command()
+    async def listintents(self, ctx):
+        """List all mapped intents."""
+        intents = await self.config_manager.list_intents()
+        if not intents:
+            await ctx.send("No intents configured.")
+            return
+        embed = discord.Embed(title="Configured Intents", color=discord.Color.blue())
+        for phrase, intent in intents.items():
+            embed.add_field(name=phrase, value=f"Action: {intent['action']}, Server: {intent['server_id']}", inline=False)
+        await ctx.send(embed=embed)
+
+    @red.command()
+    async def setapikey(self, ctx, api_key: str):
+        """Set the Pterodactyl API key."""
+        await self.config_manager.set_ptero_api_key(api_key)
+        await ctx.send("Pterodactyl API key set.")
+
+    @red.command()
+    async def setgptkey(self, ctx, api_key: str):
+        """Set the OpenAI GPT API key."""
+        await self.config_manager.set_gpt_api_key(api_key)
+        await ctx.send("OpenAI GPT API key set.")

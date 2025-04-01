@@ -1,17 +1,16 @@
 from flask import Flask, jsonify, request
 from redbot.core.bot import Red
 from announcements import Announcements
-from flask_cors import CORS  # Add CORS support for cross-origin requests
+from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 bot: Red = None
 
 @app.route("/announcements", methods=["GET"])
 def get_announcements():
     cog: Announcements = bot.get_cog("Announcements")
     if cog:
-        # Return the latest announcement in a list format for compatibility with the script
         return jsonify([cog.get_latest()])
     return jsonify([])
 
@@ -35,4 +34,4 @@ def update_announcement():
 def run_api(_bot):
     global bot
     bot = _bot
-    app.run(host="0.0.0.0", port=8765)
+    app.run(host="127.0.0.1", port=8765)  # Ensure it binds to localhost only

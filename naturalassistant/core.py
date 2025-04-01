@@ -25,6 +25,7 @@ class NaturalAssistant(commands.Cog):
         self.config.register_custom("thresholds", default={"cpu": 80, "memory": 80, "disk": 80})
         self.config.register_custom("api_keys", default={"ptero": None, "gpt": None})
         self.config.register_custom("intents", default={})
+        self.config.register_guild(admin_ids=[])
 
         self.resource_monitor_loop.change_interval(minutes=self.resource_monitor_interval)
         self.resource_monitor_loop.start()

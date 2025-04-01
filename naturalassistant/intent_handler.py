@@ -6,7 +6,7 @@ async def match_intent(message, config_manager):
         if phrase.lower() in message.lower():
             return intent
 
-    # Fallback: Use GPT to predict intent
+    # Fallback: Use GPT to predict intent if no saved intent matches
     try:
         predicted_intent = await format_response_with_gpt(
             f"Predict the intent of this message: '{message}'. "

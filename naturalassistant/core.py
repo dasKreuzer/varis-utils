@@ -27,10 +27,7 @@ class NaturalAssistant(commands.Cog):
         # Initialize configuration groups with correct syntax
         self.config.register_custom("thresholds", default={"cpu": 80, "memory": 80, "disk": 80})
         self.config.register_custom("api_keys", default={"ptero": None, "gpt": None})
-        self.config.register_custom("intents", default={
-            "restart server": {"action": "restart", "server_id": "default_server", "roles": []},
-            "check status": {"action": "status", "server_id": "default_server", "roles": []}
-        })
+        self.config.register_custom("intents", default={})  # Ensure intents are initialized
         self.config.register_custom("features", default={"resource_monitoring": False, "intent_handling": False})
         self.config.register_custom("rate_limit", default={"max_requests": 5, "time_window": 60})  # 5 requests per 60 seconds
         self.config.register_custom("fallback_phrases", default={

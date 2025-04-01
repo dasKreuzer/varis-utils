@@ -1,12 +1,11 @@
 {
     "author": ["Varis"],
-    "description": "Live server status announcements for FiveM.",
-    "install_msg": "✅ Announcements cog installed.",
+    "description": "Live server status announcements for FiveM. Now with configurable announcement channels.",
+    "install_msg": "✅ Announcements cog installed. Use `[p]announcements` commands to configure.",
     "short": "FiveM Announcements",
     "name": "announcements",
     "hidden": false,
     "disabled": false,
-    "tags": ["fivem", "status", "api"],
+    "tags": ["fivem", "status", "api", "configurable"],
     "type": "COG"
-  }
-  
+}

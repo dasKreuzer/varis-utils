@@ -56,6 +56,19 @@ class Announcements(commands.Cog):
         await self.config.guild(ctx.guild).announcement_channel.set(None)
         await ctx.send("✅ Announcement channel cleared.")
 
+    @announcements.command()
+    async def getchannel(self, ctx):
+        """Get the currently configured announcement channel."""
+        channel_id = await self.config.guild(ctx.guild).announcement_channel()
+        if channel_id:
+            channel = ctx.guild.get_channel(channel_id)
+            if channel:
+                await ctx.send(f"📢 Current announcement channel: {channel.mention}")
+            else:
+                await ctx.send("⚠️ The configured channel is no longer available.")
+        else:
+            await ctx.send("⚠️ No announcement channel is configured.")
+
     def get_latest(self):
         # Ensure the data is in a format suitable for JavaScript
         return {

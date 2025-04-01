@@ -22,9 +22,9 @@ class NaturalAssistant(commands.Cog):
         self.resource_monitor_interval = 5  # Default interval in minutes
 
         # Initialize configuration groups with correct syntax
-        self.config.register_custom("thresholds", {"cpu": 80, "memory": 80, "disk": 80})
-        self.config.register_custom("api_keys", {"ptero": None, "gpt": None})
-        self.config.register_custom("intents", {})
+        self.config.register_custom("thresholds", default={"cpu": 80, "memory": 80, "disk": 80})
+        self.config.register_custom("api_keys", default={"ptero": None, "gpt": None})
+        self.config.register_custom("intents", default={})
 
         self.resource_monitor_loop.change_interval(minutes=self.resource_monitor_interval)
         self.resource_monitor_loop.start()

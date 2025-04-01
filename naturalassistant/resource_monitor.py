@@ -6,6 +6,7 @@ log = logging.getLogger("red.naturalassistant")
 async def check_system_resources(config_manager):
     warnings = []
     try:
+        # Ensure thresholds are initialized with default values
         thresholds = await config_manager.config.custom("thresholds").all()
         cpu_threshold = thresholds.get("cpu", 80)
         memory_threshold = thresholds.get("memory", 80)

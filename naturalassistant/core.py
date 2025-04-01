@@ -23,6 +23,7 @@ class NaturalAssistant(commands.Cog):
         self.ptero_api = PterodactylAPI(self.config_manager)
         self.resource_monitor_interval = 5  # Default interval in minutes
         self.rate_limits = defaultdict(list)  # Tracks user requests: {user_id: [timestamps]}
+        self.message_cooldown = {}  # Tracks cooldown for sending messages per channel
 
         # Initialize configuration groups with correct syntax
         self.config.register_custom("thresholds", default={"cpu": 80, "memory": 80, "disk": 80})
@@ -54,8 +55,17 @@ class NaturalAssistant(commands.Cog):
             return await self.config.custom("features").all()
         except ValueError:
             # Initialize the features group if it is not already initialized
-            await self.config.custom("features").set({})
+            await self.config.custom("features").set({"resource_monitoring": False, "intent_handling": False})
             return {"resource_monitoring": False, "intent_handling": False}
+
+    async def send_message_with_cooldown(self, channel, content, cooldown=5):
+        """Send a message to a channel with a cooldown to prevent spamming."""
+        now = time.time()
+        if channel.id in self.message_cooldown and now - self.message_cooldown[channel.id] < cooldown:
+            log.warning(f"Message to channel {channel.id} skipped due to cooldown.")
+            return
+        self.message_cooldown[channel.id] = now
+        await channel.send(content)
 
     @tasks.loop(minutes=5)
     async def resource_monitor_loop(self):
@@ -224,7 +234,7 @@ class NaturalAssistant(commands.Cog):
 
             # Apply rate limiting for non-admins
             if not is_admin and await self.is_rate_limited(message.author.id):
-                await message.channel.send("You are being rate-limited. Please wait before making another request.")
+                await self.send_message_with_cooldown(message.channel, "You are being rate-limited. Please wait before making another request.")
                 return
 
             # Check if the message matches an intent
@@ -232,7 +242,7 @@ class NaturalAssistant(commands.Cog):
             if intent:
                 allowed_roles = intent.get("roles", [])
                 if not await check_user_permission(message.author, allowed_roles):
-                    await message.channel.send("Sorry, you don't have permission to do that.")
+                    await self.send_message_with_cooldown(message.channel, "Sorry, you don't have permission to do that.")
                     return
 
                 action = intent["action"]
@@ -246,13 +256,13 @@ class NaturalAssistant(commands.Cog):
                     # Fallback to predefined phrases if GPT fails
                     formatted_response = await self.get_fallback_response(action)
 
-                await message.channel.send(formatted_response)
+                await self.send_message_with_cooldown(message.channel, formatted_response)
             else:
                 # If no intent matches, check for basic phrases
                 try:
                     # Attempt to use GPT for unmatched messages
                     gpt_response = await format_response_with_gpt(message.content)
-                    await message.channel.send(gpt_response)
+                    await self.send_message_with_cooldown(message.channel, gpt_response)
 
                     # Save the learned intent if GPT response is successful
                     predicted_intent = await format_response_with_gpt(
@@ -271,7 +281,7 @@ class NaturalAssistant(commands.Cog):
                     log.error(f"GPT error for unmatched message: {e}")
                     # Fallback to predefined phrases if GPT fails
                     fallback_response = await self.get_fallback_response(message.content)
-                    await message.channel.send(fallback_response)
+                    await self.send_message_with_cooldown(message.channel, fallback_response)
         except Exception as e:
             log.error(f"Error processing message: {e}")
-            await message.channel.send("An error occurred while processing your request.")
+            await self.send_message_with_cooldown(message.channel, "An error occurred while processing your request.")

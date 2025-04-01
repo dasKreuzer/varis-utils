@@ -1,5 +1,6 @@
 import psutil
 import logging
+import time
 
 log = logging.getLogger("red.naturalassistant")
 
@@ -40,8 +41,15 @@ async def send_warning_to_admins(bot, warnings):
         log.error("NaturalAssistant cog is not loaded. Cannot send warnings to admins.")
         return
 
+    cooldowns = {}  # Track cooldowns for each guild
     for guild in bot.guilds:
         try:
+            now = time.time()
+            if guild.id in cooldowns and now - cooldowns[guild.id] < 300:  # 5-minute cooldown
+                log.warning(f"Skipping warnings for guild {guild.id} due to cooldown.")
+                continue
+            cooldowns[guild.id] = now
+
             admin_ids = await cog.config.guild(guild).get_raw("admin_ids", default=[])
             for admin_id in admin_ids:
                 admin = guild.get_member(admin_id)
